@@ -115,10 +115,7 @@ app.post("/login/", async (request, response) => {
 app.get("/user/tweets/feed/", authenticateToken, async (request, response) => {
   const { username } = request;
   const getTweetsQuery = `
-        SELECT * FROM user
-        LEFT JOIN follower ON
-        user.user_id = follower.following_user_id 
-        WHERE user.username = '${username}';`;
+  `;
   const result = await db.all(getTweetsQuery);
 
   const convertDbObjectToResponseObject = (object) => {
@@ -129,10 +126,10 @@ app.get("/user/tweets/feed/", authenticateToken, async (request, response) => {
     };
   };
 
-  const resultList = result.map((object) =>
-    convertDbObjectToResponseObject(object)
-  );
-  response.send(resultList);
+  //   const resultList = result.map((object) =>
+  //     convertDbObjectToResponseObject(object)
+  //   );
+  //   response.send(resultList);
 });
 
 // // API 4
