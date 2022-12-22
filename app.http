@@ -1,161 +1,86 @@
-const express = require("express");
-const app = express();
-app.use(express.json());
+### API 1
 
-module.exports = app;
+POST http://localhost:3000/register/
+Content-Type: application/json
 
-const { open } = require("sqlite");
-const sqlite3 = require("sqlite3");
+{
+  "username": "adam_richard",
+  "password": "richard_567",
+  "name": "Adam Richard",
+  "gender": "male"
+}
+###
 
-const path = require("path");
 
-const dbPath = path.join(__dirname, "twitterClone.db");
+### API 2
 
-const bcrypt = require("bcrypt");
+POST http://localhost:3000/login/
+Content-Type: application/json
 
-const jwt = require("jsonwebtoken");
+{
+  "username":"JoeBiden",
+  "password":"biden@123"
+}
+###
 
-let db;
 
-const initializeDbAndServer = async () => {
-  try {
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    });
-    app.listen(3000, () => {
-      console.log("Server Online");
-    });
-  } catch (e) {
-    console.log(`Database Error: ${e}`);
-  }
-};
+### Authentication with JWT Token
 
-initializeDbAndServer();
+{
+  "jwtToken": "eyJhbGciOiJIUzI1NiJ9.Sm9lQmlkZW4.GjSNsSse4owm-1fPgHhaObq8kb6ZfGuGT-AnnL7Jf50"
+}
 
-////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////
+### API 3
 
-// authorize token
-const authenticateToken = (request, response, next) => {
-  console.log("authenticateToken");
-  let jwtToken;
-  const authHeader = request.headers["authorization"];
-  if (authHeader !== undefined) {
-    jwtToken = authHeader.split(" ")[1];
-  }
-  if (jwtToken === undefined) {
-    response.status(401);
-    response.send("Invalid JWT Token");
-  } else {
-    jwt.verify(jwtToken, "MY_SECRET_TOKEN", async (error, payload) => {
-      if (error) {
-        response.status(401);
-        response.send("Invalid JWT Token");
-      } else {
-        request.username = payload;
-        next();
-      }
-    });
-  }
-};
+GET http://localhost:3000/user/tweets/feed/
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.Sm9lQmlkZW4.GjSNsSse4owm-1fPgHhaObq8kb6ZfGuGT-AnnL7Jf50
+Content-Type: application/json
 
-// API 1
-app.post("/register/", async (request, response) => {
-  const { username, password, name, gender } = request.body;
 
-  const searchUserQuery = `SELECT * FROM user WHERE username = '${username}';`;
+###
 
-  const alreadyRegistered = await db.get(searchUserQuery);
+### API 4
+GET http://localhost:3000/user/following/
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.Sm9lQmlkZW4.GjSNsSse4owm-1fPgHhaObq8kb6ZfGuGT-AnnL7Jf50
+Content-Type: application/json
 
-  // response.send("User already exists");
-  if (alreadyRegistered !== undefined) {
-    response.status(400);
-    response.send("User already exists");
-    console.log(alreadyRegistered);
-  } else if (password.length < 6) {
-    response.status(400);
-    response.send("Password is too short");
-  } else {
-    const hash = await bcrypt.hash(password, 10);
-    const registerUserQuery = `
-        INSERT INTO user (
-            name,username,password,gender) 
-            VALUES ('${name}','${username}','${hash}','${gender}');`;
-    await db.run(registerUserQuery);
-    response.send("User created successfully");
-  }
-});
 
-// API 2
-app.post("/login/", async (request, response) => {
-  const { username, password } = request.body;
-  const searchUserQuery = `SELECT * FROM user WHERE username = '${username}';`;
-  const alreadyRegistered = await db.get(searchUserQuery);
-  if (alreadyRegistered === undefined) {
-    response.status(400);
-    response.send("Invalid user");
-  } else {
-    const validPassword = await bcrypt.compare(
-      password,
-      alreadyRegistered.password
-    );
-    if (validPassword) {
-      const jwtToken = jwt.sign(username, "MY_SECRET_TOKEN");
-      response.send({ jwtToken });
-    } else {
-      response.status(400);
-      response.send("Invalid password");
-    }
-  }
-});
+###
 
-// API 3
-app.get("/user/tweets/feed/", authenticateToken, async (request, response) => {
-  const { username } = request;
-  const getTweetsQuery = `
-  SELECT * FROM tweet LEFT JOIN user ON tweet.user_id = user.user_id 
-    WHERE tweet.user_id IN (
-      SELECT following_user_id FROM follower LEFT JOIN user 
-      ON follower_user_id = user.user_id
-  ) ORDER BY tweet.date_time DESC LIMIT 4;`;
-  const result = await db.all(getTweetsQuery);
+### API 5
+GET http://localhost:3000/user/followers/
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.Sm9lQmlkZW4.GjSNsSse4owm-1fPgHhaObq8kb6ZfGuGT-AnnL7Jf50
+Content-Type: application/json
 
-  console.log(result);
 
-  const convertDbObjectToResponseObject = (object) => {
-    return {
-      username: object.username,
-      tweet: object.tweet,
-      dateTime: object.date_time,
-    };
-  };
+###
 
-  const resultList = result.map((object) =>
-    convertDbObjectToResponseObject(object)
-  );
-  console.log(resultList);
-  response.send(resultList);
-});
+###API 6
+GET http://localhost:3000/tweets/:tweetId/
+###
 
-// API 4
-app.get("/user/following/", authenticateToken, async (request, response) => {
-  const { username } = request;
+### API 7 
+GET http://localhost:3000/tweets/:tweetId/likes/
+###
 
-  const getFollowersQuery = `
-  SELECT name from user WHERE user.user_id IN(
-  SELECT following_user_id FROM user 
-  LEFT JOIN follower ON user.user_id = follower_user_id 
-   WHERE user.username = '${username}');`;
+###API 8
+GET http://localhost:3000/tweets/:tweetId/replies/
+###
 
-  const result = await db.all(getFollowersQuery);
-  console.log(result);
-  response.send(result);
-});
+### API 9
+GET http://localhost:3000/user/tweets/
+###
 
-// // API 11
+### API 10
+POST http://localhost:3000/user/tweets/
+Content-Type: application/json
 
-// app.delete("/tweets/:tweetId/", async (request, response) => {
-//   const { tweetId } = request.params;
-// });
+{
+   "tweet": "The Mornings..."
+}
+###
+
+### API 11
+DELETE http://localhost:3000/tweets/1/
+###
