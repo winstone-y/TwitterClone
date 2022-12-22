@@ -154,8 +154,20 @@ app.get("/user/following/", authenticateToken, async (request, response) => {
   response.send(result);
 });
 
-// // API 11
+// API 5
+app.get("/user/followers/", authenticateToken, async (request, response) => {
+  const { username } = request;
 
-// app.delete("/tweets/:tweetId/", async (request, response) => {
-//   const { tweetId } = request.params;
-// });
+  const getUserFollowersQuery = `
+  SELECT name FROM user WHERE user_id IN (
+  SELECT follower_user_id FROM follower 
+  WHERE following_user_id In 
+  (
+      SELECT user_id FROM user WHERE 
+      username = '${username}'
+      ));`;
+
+  const result = await db.all(getUserFollowersQuery);
+  console.log(result);
+  response.send(result);
+});
