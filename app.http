@@ -49,7 +49,11 @@ Content-Type: application/json
 ###
 
 ### API 5
-GET http://localhost:3000/JoeBiden/followers/
+GET http://localhost:3000/user/followers/
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.Sm9lQmlkZW4.GjSNsSse4owm-1fPgHhaObq8kb6ZfGuGT-AnnL7Jf50
+Content-Type: application/json
+
+
 ###
 
 ###API 6

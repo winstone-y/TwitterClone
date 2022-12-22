@@ -115,8 +115,14 @@ app.post("/login/", async (request, response) => {
 app.get("/user/tweets/feed/", authenticateToken, async (request, response) => {
   const { username } = request;
   const getTweetsQuery = `
-  `;
+  SELECT * FROM tweet LEFT JOIN user ON tweet.user_id = user.user_id 
+    WHERE tweet.user_id IN (
+      SELECT following_user_id FROM follower LEFT JOIN user 
+      ON follower_user_id = user.user_id
+  ) ORDER BY tweet.date_time DESC LIMIT 4;`;
   const result = await db.all(getTweetsQuery);
+
+  console.log(result);
 
   const convertDbObjectToResponseObject = (object) => {
     return {
@@ -126,35 +132,27 @@ app.get("/user/tweets/feed/", authenticateToken, async (request, response) => {
     };
   };
 
-  //   const resultList = result.map((object) =>
-  //     convertDbObjectToResponseObject(object)
-  //   );
-  //   response.send(resultList);
+  const resultList = result.map((object) =>
+    convertDbObjectToResponseObject(object)
+  );
+  console.log(resultList);
+  response.send(resultList);
 });
 
-// // API 4
-// app.get("/user/following/", authenticateToken, async (request, response) => {
-//   const { username } = request.username;
+// API 4
+app.get("/user/following/", authenticateToken, async (request, response) => {
+  const { username } = request;
 
-//   const getFollowersQuery = `
-//       SELECT * FROM user
-//       LEFT JOIN follower ON
-//       user.user_id = follower.follower_user_id;`;
-//   const result = await db.all(getFollowersQuery);
-//   response.send(result);
-//   // convert Database Object To Response Object
+  const getFollowersQuery = `
+  SELECT name from user WHERE user.user_id IN(
+  SELECT following_user_id FROM user 
+  LEFT JOIN follower ON user.user_id = follower_user_id 
+   WHERE user.username = '${username}');`;
 
-//   const convertDbObjectToResponseObject = (object) => {
-//     return {
-//       name: object.name,
-//     };
-//   };
-
-//   const resultList = result.map((object) =>
-//     convertDbObjectToResponseObject(object)
-//   );
-//   response.send(resultList);
-// });
+  const result = await db.all(getFollowersQuery);
+  console.log(result);
+  response.send(result);
+});
 
 // // API 11
 
